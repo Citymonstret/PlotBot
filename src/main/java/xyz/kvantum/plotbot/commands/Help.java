@@ -7,16 +7,12 @@ import net.dv8tion.jda.core.MessageBuilder;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.PlotBot;
 
-@CommandDeclaration(
-		command = "help",
-		description = "This command!"
-)
-public class Help extends Command
+@CommandDeclaration(command = "help", description = "This command!") public class Help extends Command
 {
 
 	@Override public boolean onCommand(CommandInstance instance)
 	{
-		final DiscordCommandCaller discordCommandCaller = (DiscordCommandCaller) instance.getCaller();
+		final DiscordCommandCaller discordCommandCaller = ( DiscordCommandCaller ) instance.getCaller();
 		MessageBuilder messageBuilder = new MessageBuilder();
 		messageBuilder.append( "Hello " ).append( discordCommandCaller.getSuperCaller() )
 				.append( ", these are the commands that you are permitted to use: " );
@@ -31,8 +27,7 @@ public class Help extends Command
 				}
 			}
 		}
-		discordCommandCaller.getSuperCaller().getUser().openPrivateChannel().queue( channel ->
-		{
+		discordCommandCaller.getSuperCaller().getUser().openPrivateChannel().queue( channel -> {
 			channel.sendMessage( messageBuilder.build() ).queue();
 		} );
 		return true;

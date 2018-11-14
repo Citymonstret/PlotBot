@@ -3,6 +3,8 @@ package xyz.kvantum.plotbot.listener;
 import com.intellectualsites.commands.CommandHandlingOutput;
 import com.intellectualsites.commands.CommandResult;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -18,6 +20,7 @@ import xyz.kvantum.plotbot.text.TextPromptManager;
 
 @RequiredArgsConstructor public class Listener extends ListenerAdapter
 {
+	private static final Pattern CALL_ME_PATTERN = Pattern.compile( "call me (?<name>[A-Za-z0-9_]+)" );
 
 	private final BotCommandManager commandManager;
 	private final TextPromptManager textPromptManager = new TextPromptManager();
@@ -29,8 +32,8 @@ import xyz.kvantum.plotbot.text.TextPromptManager;
 		{
 			return;
 		}
-		event.getAuthor().openPrivateChannel().queue( consumer ->
-				consumer.sendMessage( "You know, this is quite creepy..." ).queue() );
+		event.getAuthor().openPrivateChannel()
+				.queue( consumer -> consumer.sendMessage( "You know, this is quite creepy..." ).queue() );
 	}
 
 	@Override public void onMessageReceived(final MessageReceivedEvent event)
@@ -42,8 +45,8 @@ import xyz.kvantum.plotbot.text.TextPromptManager;
 		}
 		PlotBot.getInstance().getHistoryManager().logMessage( event.getMessage() );
 		this.logger.info( "Message sent..: " + event.getMessage().getContentRaw() );
-		final DiscordCommandCaller commandCaller = new DiscordCommandCaller( event.getTextChannel(),
-				event.getMessage(), event.getMember() );
+		final DiscordCommandCaller commandCaller = new DiscordCommandCaller( event.getTextChannel(), event.getMessage(),
+				event.getMember() );
 		final CommandResult result = this.commandManager.handle( commandCaller, event.getMessage().getContentRaw() );
 		this.logger.info( "Status: " + CommandHandlingOutput.nameField( result.getCommandResult() ) );
 		switch ( result.getCommandResult() )
@@ -81,9 +84,20 @@ import xyz.kvantum.plotbot.text.TextPromptManager;
 				{
 					if ( member.getUser().getIdLong() == PlotBot.getInstance().getJda().getSelfUser().getIdLong() )
 					{
-						if ( event.getMessage().getContentRaw().contains( "who" ) && event.getMessage().getContentRaw().contains( "daddy" ) )
+						if ( event.getMessage().getContentRaw().contains( "who" ) && event.getMessage()
+								.getContentStripped().contains( "daddy" ) )
 						{
 							commandCaller.message( "Citymonstret is my daddy ;)" );
+						} else if ( event.getMessage().getContentRaw().contains( "call me" ) )
+						{
+							final Matcher matcher = CALL_ME_PATTERN.matcher( event.getMessage().getContentStripped() );
+							if ( !matcher.matches() )
+							{
+								commandCaller.message( "Sorry, I didn't understand that. Please make some sense." );
+							} else
+							{
+
+							}
 						} else
 						{
 							commandCaller.message( "Don't @ me, bro! :angry:" );

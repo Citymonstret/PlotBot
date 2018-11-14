@@ -57,7 +57,8 @@ import xyz.kvantum.plotbot.github.GithubManager;
 				embedBuilder.setColor( Color.ORANGE );
 				final MessageEmbed messageEmbed = embedBuilder.build();
 				// channel.sendMessage( messageEmbed ).queue();
-				channel.getGuild().getTextChannelsByName( CmdIssue.channel, true ).get( 0 ).sendMessage( messageEmbed ).queue();
+				channel.getGuild().getTextChannelsByName( CmdIssue.channel, true ).get( 0 ).sendMessage( messageEmbed )
+						.queue();
 				discordCommandCaller.getMessage().delete().queue();
 			} catch ( final Exception e )
 			{

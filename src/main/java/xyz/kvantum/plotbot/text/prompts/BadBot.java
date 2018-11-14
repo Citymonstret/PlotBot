@@ -6,10 +6,9 @@ import xyz.kvantum.plotbot.text.TextPrompt;
 public class BadBot extends TextPrompt
 {
 
-	private static final String[] MESSAGES =
-			new String[] { "Why you gotta be so rude?", "What have I ever done to you?",
-			"You are in desperate need of a hug! :hugging:", "Now I feel hurt :cry:",
-					"I know where your mailbox lives!" };
+	private static final String[] MESSAGES = new String[] { "Why you gotta be so rude?",
+			"What have I ever done to you?", "You are in desperate need of a hug! :hugging:", "Now I feel hurt :cry:",
+			"I know where your mailbox lives!" };
 
 	public BadBot()
 	{
@@ -18,7 +17,7 @@ public class BadBot extends TextPrompt
 
 	@Override public void handle(final DiscordCommandCaller caller)
 	{
-		caller.message( MESSAGES[ (int) ( Math.random() * MESSAGES.length ) - 1 ] );
+		caller.message( MESSAGES[ ( int ) ( Math.random() * MESSAGES.length ) - 1 ] );
 	}
 
 }

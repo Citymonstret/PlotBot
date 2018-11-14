@@ -11,8 +11,7 @@ import org.polyjdbc.core.query.SelectQuery;
 import org.polyjdbc.core.query.VoidTransactionWrapper;
 import org.polyjdbc.core.query.mapper.StringMapper;
 
-@RequiredArgsConstructor
-public class HistoryManager
+@RequiredArgsConstructor public class HistoryManager
 {
 
 	private final SQLiteManager sqliteManager;
@@ -23,21 +22,26 @@ public class HistoryManager
 		{
 			@Override public void performVoid(final QueryRunner queryRunner)
 			{
-				queryRunner.insert( sqliteManager.getPolyJDBC().query().insert().into( "history" ).value( "timestamp", System.currentTimeMillis() ).value( "user", message.getAuthor().getIdLong() ).value( "message", message.getContentRaw() ).value( "channel", message.getChannel().getIdLong() ) );
+				queryRunner.insert( sqliteManager.getPolyJDBC().query().insert().into( "history" )
+						.value( "timestamp", System.currentTimeMillis() )
+						.value( "user", message.getAuthor().getIdLong() ).value( "message", message.getContentRaw() )
+						.value( "channel", message.getChannel().getIdLong() ) );
 			}
 		} );
 	}
 
 	public List<String> getMessages(final long userId, final long channelId, final int count)
 	{
-		final List<String> strings = new ArrayList<>( sqliteManager.getPolyJDBC().transactionRunner().run( queryRunner ->
-		{
-			final SelectQuery selectQuery = sqliteManager.getPolyJDBC().query().select( "message" ).from( "history" ).where( "user = :user AND channel = :channel" ).limit( count ).withArgument( "user", userId ).withArgument( "channel", channelId ).orderBy( "timestamp",
-					Order.DESC );
-			return queryRunner.queryList( selectQuery, new StringMapper() );
-		} ) );
+		final List<String> strings = new ArrayList<>(
+				sqliteManager.getPolyJDBC().transactionRunner().run( queryRunner -> {
+					final SelectQuery selectQuery = sqliteManager.getPolyJDBC().query().select( "message" )
+							.from( "history" ).where( "user = :user AND channel = :channel" ).limit( count )
+							.withArgument( "user", userId ).withArgument( "channel", channelId )
+							.orderBy( "timestamp", Order.DESC );
+					return queryRunner.queryList( selectQuery, new StringMapper() );
+				} ) );
 		Collections.reverse( strings );
 		return strings;
 	}
-	
+
 }

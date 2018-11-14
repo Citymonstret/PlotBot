@@ -13,10 +13,8 @@ public final class SQLiteManager implements AutoCloseable
 
 	private static final String PATH = "plotbot.db";
 
-	@Getter
-	private final Connection connection;
-	@Getter
-	private final PolyJDBC polyJDBC;
+	@Getter private final Connection connection;
+	@Getter private final PolyJDBC polyJDBC;
 
 	public SQLiteManager()
 	{
@@ -25,8 +23,8 @@ public final class SQLiteManager implements AutoCloseable
 		try
 		{
 			connection = DriverManager.getConnection( "jdbc:sqlite:" + PATH );
-			polyJDBC = PolyJDBCBuilder.polyJDBC( DialectRegistry.MYSQL.getDialect() ).usingManagedConnections(
-					this::getConnection ).build();
+			polyJDBC = PolyJDBCBuilder.polyJDBC( DialectRegistry.MYSQL.getDialect() )
+					.usingManagedConnections( this::getConnection ).build();
 		} catch ( final SQLException e )
 		{
 			e.printStackTrace();

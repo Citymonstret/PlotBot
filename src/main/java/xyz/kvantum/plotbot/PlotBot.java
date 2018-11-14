@@ -15,18 +15,14 @@ import xyz.kvantum.plotbot.listener.Listener;
 public class PlotBot
 {
 
-	@Getter
-	private static PlotBot instance;
+	@Getter private static PlotBot instance;
 
 	private final Logger logger;
-	@Getter
-	private final JDA jda;
-	@Getter
-	private final BotCommandManager commandManager;
+	@Getter private final JDA jda;
+	@Getter private final BotCommandManager commandManager;
 	private final GithubManager githubManager;
 	private final SQLiteManager sqLiteManager;
-	@Getter
-	private final HistoryManager historyManager;
+	@Getter private final HistoryManager historyManager;
 
 	private PlotBot()
 	{

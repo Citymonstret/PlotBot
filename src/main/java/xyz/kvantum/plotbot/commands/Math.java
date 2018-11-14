@@ -10,25 +10,21 @@ import retrofit2.Retrofit;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.MathManager;
 
-@CommandDeclaration(
-		description = "Do some calculation magic",
-		usage = "!math [expression]",
-		command = "math"
-)
-public class Math extends Command
+@CommandDeclaration(description = "Do some calculation magic", usage = "!math [expression]", command = "math") public class Math
+		extends Command
 {
 
 	private final MathManager mathManager;
 
 	public Math()
 	{
-		this.mathManager = new Retrofit.Builder().baseUrl( "http://api.mathjs.org/v4/" )
-				.build().create( MathManager.class );
+		this.mathManager = new Retrofit.Builder().baseUrl( "http://api.mathjs.org/v4/" ).build()
+				.create( MathManager.class );
 	}
 
 	@Override public boolean onCommand(CommandInstance instance)
 	{
-		final DiscordCommandCaller discordCommandCaller = (DiscordCommandCaller) instance.getCaller();
+		final DiscordCommandCaller discordCommandCaller = ( DiscordCommandCaller ) instance.getCaller();
 		discordCommandCaller.getChannel().sendTyping().queue();
 
 		if ( instance.getArguments().length == 0 )

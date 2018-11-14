@@ -20,6 +20,7 @@ public class BotCommandManager extends CommandManager
 		{
 			this.createCommand( new Issue( githubManager ) );
 		}
+
 		if ( BotConfig.CmdSpigot.enable )
 		{
 			this.createCommand( new Spigot() );

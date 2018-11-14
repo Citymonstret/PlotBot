@@ -6,9 +6,8 @@ import xyz.kvantum.plotbot.text.TextPrompt;
 public class GoodBot extends TextPrompt
 {
 
-	private static final String[] MESSAGES =
-			new String[] { "Thank you :smile:", "Keep it in your pants!", "Awww! :heart:",
-			"Good human!" };
+	private static final String[] MESSAGES = new String[] { "Thank you :smile:", "Keep it in your pants!",
+			"Awww! :heart:", "Good human!" };
 
 	public GoodBot()
 	{
@@ -17,6 +16,6 @@ public class GoodBot extends TextPrompt
 
 	@Override public void handle(final DiscordCommandCaller caller)
 	{
-		caller.message( MESSAGES[ (int) ( Math.random() * ( MESSAGES.length - 1 ) ) ] );
+		caller.message( MESSAGES[ ( int ) ( Math.random() * ( MESSAGES.length - 1 ) ) ] );
 	}
 }

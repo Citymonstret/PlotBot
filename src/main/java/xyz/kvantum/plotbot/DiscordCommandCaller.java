@@ -38,10 +38,11 @@ import net.dv8tion.jda.core.entities.TextChannel;
 	@Override public void sendRequiredArgumentsList(CommandManager commandManager, Command command,
 			Collection<Parserable> collection, String s)
 	{
-		final StringBuilder message = new StringBuilder( "Required arguments: [");
+		final StringBuilder message = new StringBuilder( "Required arguments: [" );
 		for ( final Parserable parserable : collection )
 		{
-			message.append( " { " ).append( parserable.getName() ).append( " - " ).append( parserable.getDesc() ).append( " } " );
+			message.append( " { " ).append( parserable.getName() ).append( " - " ).append( parserable.getDesc() )
+					.append( " } " );
 		}
 		message.append( "]" );
 		message( message.toString() );
