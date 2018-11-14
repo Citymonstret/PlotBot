@@ -6,7 +6,6 @@ import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.core.entities.User;
-import org.polyjdbc.core.query.SelectQuery;
 import xyz.kvantum.plotbot.SQLiteManager;
 
 @RequiredArgsConstructor public class NickManager
@@ -31,9 +30,9 @@ import xyz.kvantum.plotbot.SQLiteManager;
 
 	private void lookup(@NonNull final User user)
 	{
-		sqLiteManager.getPolyJDBC().transactionRunner().run( queryRunner -> {
+		/*sqLiteManager.getPolyJDBC().transactionRunner().run( queryRunner -> {
 			final SelectQuery selectQuery = sqLiteManager.getPolyJDBC().query().select()
-		} );
+		} );*/
 	}
 
 }
