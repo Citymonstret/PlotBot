@@ -3,14 +3,13 @@ package xyz.kvantum.plotbot.text.prompts;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.text.TextPrompt;
 
-public final class PlotMe extends TextPrompt {
+public class PlotSquaredSucks extends TextPrompt {
 
-    public PlotMe() {
-        super("plotme");
+    public PlotSquaredSucks() {
+        super("plotsquared sucks");
     }
 
     @Override public void handle(DiscordCommandCaller caller) {
-        // caller.getMessage().delete().reason( "Cursing" ).complete();
-        caller.message("Shhh! Don't curse!");
+        caller.message("no u");
     }
 }

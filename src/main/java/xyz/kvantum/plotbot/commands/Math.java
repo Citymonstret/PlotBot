@@ -3,57 +3,51 @@ package xyz.kvantum.plotbot.commands;
 import com.intellectualsites.commands.Command;
 import com.intellectualsites.commands.CommandDeclaration;
 import com.intellectualsites.commands.CommandInstance;
-import java.io.IOException;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.MathManager;
 
-@CommandDeclaration(description = "Do some calculation magic", usage = "!math [expression]", command = "math") public class Math
-		extends Command
-{
+import java.io.IOException;
 
-	private final MathManager mathManager;
+@CommandDeclaration(description = "Do some calculation magic", usage = "!math [expression]", command = "math")
+public class Math extends Command {
 
-	public Math()
-	{
-		this.mathManager = new Retrofit.Builder().baseUrl( "http://api.mathjs.org/v4/" ).build()
-				.create( MathManager.class );
-	}
+    private final MathManager mathManager;
 
-	@Override public boolean onCommand(CommandInstance instance)
-	{
-		final DiscordCommandCaller discordCommandCaller = ( DiscordCommandCaller ) instance.getCaller();
-		discordCommandCaller.getChannel().sendTyping().queue();
+    public Math() {
+        this.mathManager = new Retrofit.Builder().baseUrl("http://api.mathjs.org/v4/").build()
+            .create(MathManager.class);
+    }
 
-		if ( instance.getArguments().length == 0 )
-		{
-			discordCommandCaller.message( "You need to specify an expression!" );
-			return true;
-		}
+    @Override public boolean onCommand(CommandInstance instance) {
+        final DiscordCommandCaller discordCommandCaller =
+            (DiscordCommandCaller) instance.getCaller();
+        discordCommandCaller.getChannel().sendTyping().queue();
 
-		final StringBuilder builder = new StringBuilder();
-		for ( final String arg : instance.getArguments() )
-		{
-			builder.append( arg ).append( " " );
-		}
+        if (instance.getArguments().length == 0) {
+            discordCommandCaller.message("You need to specify an expression!");
+            return true;
+        }
 
-		try
-		{
-			final Response<ResponseBody> bodyResponse = mathManager.mathify( builder.toString() ).execute();
-			if ( !bodyResponse.isSuccessful() )
-			{
-				discordCommandCaller.message( "Failed to send the request :(" );
-			} else
-			{
-				discordCommandCaller.message( "Result: " + bodyResponse.body().string() );
-			}
-		} catch ( IOException e )
-		{
-			e.printStackTrace();
-		}
+        final StringBuilder builder = new StringBuilder();
+        for (final String arg : instance.getArguments()) {
+            builder.append(arg).append(" ");
+        }
 
-		return true;
-	}
+        try {
+            final Response<ResponseBody> bodyResponse =
+                mathManager.mathify(builder.toString()).execute();
+            if (!bodyResponse.isSuccessful()) {
+                discordCommandCaller.message("Failed to send the request :(");
+            } else {
+                discordCommandCaller.message("Result: " + bodyResponse.body().string());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return true;
+    }
 }

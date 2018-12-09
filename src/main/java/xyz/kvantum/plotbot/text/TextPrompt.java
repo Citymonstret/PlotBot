@@ -5,11 +5,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 
-@EqualsAndHashCode @RequiredArgsConstructor public abstract class TextPrompt
-{
+@EqualsAndHashCode @RequiredArgsConstructor public abstract class TextPrompt {
 
-	@Getter private final String promptText;
+    @Getter private final String promptText;
 
-	public abstract void handle(DiscordCommandCaller caller);
+    public abstract void handle(DiscordCommandCaller caller);
 
 }
