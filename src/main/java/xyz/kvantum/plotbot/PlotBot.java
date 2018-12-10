@@ -6,7 +6,7 @@ import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.OnlineStatus;
-import net.dv8tion.jda.core.entities.RichPresence;
+import net.dv8tion.jda.core.entities.Game;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.kvantum.plotbot.github.GithubManager;
@@ -44,7 +44,7 @@ public class PlotBot {
         try {
             temporary = new JDABuilder(AccountType.BOT).setToken(BotConfig.token)
                 .setStatus(OnlineStatus.DO_NOT_DISTURB)
-                .setGame(RichPresence.listening(BotConfig.listeningTo))
+                .setGame(Game.listening(BotConfig.listeningTo))
                 .addEventListener(new Listener(this.commandManager, logger)).build().awaitReady();
         } catch (final LoginException | InterruptedException e) {
             this.logger.error("Failed to create JDA instance :(", e);
