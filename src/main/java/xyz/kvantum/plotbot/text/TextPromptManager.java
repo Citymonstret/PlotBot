@@ -17,6 +17,7 @@ public final class TextPromptManager {
         textPrompts.add(new BadBot());
         textPrompts.add(new PlotSquaredSucks());
         textPrompts.add(new WhatIsLove());
+        textPrompts.add(new NotMyFaultIsRude());
     }
 
     public Optional<TextPrompt> getPrompt(final String inputText) {

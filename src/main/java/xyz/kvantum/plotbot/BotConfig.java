@@ -19,12 +19,11 @@ import com.intellectualsites.configurable.annotations.Configuration;
 
     @ConfigSection public static class CmdSpigot {
         public static boolean enable = true;
-        public static int resourceId = -1;
+        public static String resourceId = "1177|13932";
         public static long cacheTime = 60000;
-        public static String resourceName = "Your Resource Name";
-        public static String url = "http://google.com";
+        public static String resourceName = "PlotSquared|FastAsyncWorldEdit";
+        public static String url = "https://www.spigotmc.org/resources/plotsquared.1177/|https://www.spigotmc.org/resources/fast-async-worldedit-voxelsniper.13932/";
     }
-
 
     @ConfigSection public static class Guild {
         public static String trustedRank = "@trusted";
