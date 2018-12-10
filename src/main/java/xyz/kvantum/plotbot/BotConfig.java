@@ -8,7 +8,7 @@ import com.intellectualsites.configurable.annotations.Configuration;
 
     public static String token = "token";
     public static String initialCharacter = "!";
-
+    public static String listeningTo = "messages | !help";
 
     @ConfigSection public static class Github {
         public static String issueLink = "http://google.com";
