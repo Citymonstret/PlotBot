@@ -2,6 +2,9 @@ package xyz.kvantum.plotbot.listener;
 
 import com.intellectualsites.commands.CommandHandlingOutput;
 import com.intellectualsites.commands.CommandResult;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -14,10 +17,6 @@ import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.PlotBot;
 import xyz.kvantum.plotbot.text.TextPrompt;
 import xyz.kvantum.plotbot.text.TextPromptManager;
-
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @RequiredArgsConstructor public class Listener extends ListenerAdapter {
     private static final Pattern CALL_ME_PATTERN =
