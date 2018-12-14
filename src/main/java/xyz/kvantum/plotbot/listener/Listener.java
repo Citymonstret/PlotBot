@@ -5,14 +5,17 @@ import com.intellectualsites.commands.CommandResult;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.slf4j.Logger;
 import xyz.kvantum.plotbot.BotCommandManager;
 import xyz.kvantum.plotbot.BotConfig;
+import xyz.kvantum.plotbot.BotConfig.Guild;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.PlotBot;
 import xyz.kvantum.plotbot.text.TextPrompt;
@@ -34,11 +37,27 @@ import xyz.kvantum.plotbot.text.TextPromptManager;
             .queue(consumer -> consumer.sendMessage("You know, this is quite creepy...").queue());
     }
 
-    @Override public void onMessageReceived(final MessageReceivedEvent event) {
+  @Override
+  public void onGuildMemberJoin(final GuildMemberJoinEvent event) {
+      final int size = event.getGuild().getMembers().size();
+      event.getGuild().getTextChannelsByName(Guild.announcementChannel, true)
+        .get(0).sendMessage(String.format("Let's party like it's %s. Welcome %s!", size, event.getMember().getEffectiveName())).queue();
+      sendInfoMsg(size, event.getGuild());
+  }
+
+  private void sendInfoMsg(final int size, @NonNull final net.dv8tion.jda.core.entities.Guild guild) {
+    final int nextThousand = (int) (Math.floor(size / 1000f) + 1) * 1000;
+    final int left = nextThousand - size;
+    guild.getTextChannelsByName(Guild.announcementChannel, true)
+        .get(0).sendMessage(String.format("Only %d members left until we've reached %d!", left, nextThousand)).queue();
+  }
+
+  @Override public void onMessageReceived(final MessageReceivedEvent event) {
         // Ignore bot messages
         if (event.getAuthor().isBot()) {
             return;
         }
+
         PlotBot.getInstance().getHistoryManager().logMessage(event.getMessage());
         this.logger.info("Message sent..: " + event.getMessage().getContentRaw());
         final DiscordCommandCaller commandCaller =
@@ -85,7 +104,13 @@ import xyz.kvantum.plotbot.text.TextPromptManager;
                         for (final Member member : event.getMessage().getMentionedMembers()) {
                             if (member.getUser().getIdLong() == PlotBot.getInstance().getJda().getSelfUser().getIdLong()) {
                                 if (event.getMessage().getContentRaw().contains("who") && event.getMessage().getContentStripped().contains("daddy")) {
-                                    commandCaller.message("Citymonstret is my daddy ;)");
+                                  commandCaller.message("Citymonstret is my daddy ;)");
+                                } else if (event.getMessage().getContentRaw().contains("how many") && event.getMessage().getContentRaw().contains("members")) {
+                                  sendInfoMsg(event.getGuild().getMembers().size(),
+                                      event.getGuild());
+                                } else if (event.getMessage().getContentRaw().contains("How do I make sense?")) {
+                                    commandCaller.message("Mix three parts logic and one part knowledge. Stir it until a it's a homogeneous mixture."
+                                        + " Put in oven at 200 degrees Celsius for 30 minutes. Put in fridge until it's cool to touch.");
                                 } else if (event.getMessage().getContentRaw().contains("call me")) {
                                     final Matcher matcher = CALL_ME_PATTERN
                                         .matcher(event.getMessage().getContentStripped());

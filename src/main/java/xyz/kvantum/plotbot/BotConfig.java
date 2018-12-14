@@ -27,6 +27,7 @@ import com.intellectualsites.configurable.annotations.Configuration;
 
     @ConfigSection public static class Guild {
         public static String trustedRank = "@trusted";
+        public static String announcementChannel = "off-topic";
     }
 
 
