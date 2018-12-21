@@ -11,7 +11,7 @@ import xyz.kvantum.plotbot.MathManager;
 
 import java.io.IOException;
 
-@CommandDeclaration(description = "Do some calculation magic", usage = "!math [expression]", command = "math")
+@CommandDeclaration(description = "Do some calculation magic", usage = "!math [expression]", command = "math", permission = "all")
 public class Math extends Command {
 
     private final MathManager mathManager;

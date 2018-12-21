@@ -29,7 +29,7 @@ import java.util.Collection;
     }
 
     @Override public boolean hasAttachment(@NonNull final String s) {
-        return s.isEmpty() || user.hasPermission(Permission.ADMINISTRATOR);
+        return s.isEmpty() || s.equalsIgnoreCase("all") || user.hasPermission(Permission.ADMINISTRATOR);
     }
 
     @Override public void sendRequiredArgumentsList(CommandManager commandManager, Command command,

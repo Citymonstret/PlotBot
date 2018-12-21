@@ -31,11 +31,12 @@ public class PlotBot {
 
         this.logger = LoggerFactory.getLogger("PlotBot");
         this.githubManager = new GithubManager(logger);
-        this.commandManager = new BotCommandManager(githubManager);
         this.sqLiteManager = new SQLiteManager();
         this.historyManager = new HistoryManager(this.sqLiteManager);
 
         ConfigurationFactory.load(BotConfig.class, new File("./"));
+
+        this.commandManager = new BotCommandManager(githubManager);
 
         this.githubManager.connect();
 

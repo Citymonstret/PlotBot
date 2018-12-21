@@ -28,6 +28,11 @@ public class BotCommandManager extends CommandManager {
         this.createCommand(new Source());
         this.createCommand(new Repeat());
         this.createCommand(new Distrust());
+        this.createCommand(new Annoy());
+        this.createCommand(new SetupAutoRole());
+        this.createCommand(new Identify());
+        this.createCommand(new Material());
+        this.createCommand(new Translate());
         this.setInitialCharacter(BotConfig.initialCharacter.charAt(0));
     }
 

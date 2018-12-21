@@ -4,7 +4,7 @@ import com.intellectualsites.commands.Command;
 import com.intellectualsites.commands.CommandDeclaration;
 import com.intellectualsites.commands.CommandInstance;
 
-@CommandDeclaration(command = "source", description = "Get link to source code")
+@CommandDeclaration(command = "source", description = "Get link to source code", permission = "all")
 public class Source extends Command {
 
     private static final String SOURCE = "https://github.com/Sauilitired/PlotBot";

@@ -7,7 +7,7 @@ import net.dv8tion.jda.core.MessageBuilder;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.PlotBot;
 
-@CommandDeclaration(command = "help", description = "This command!") public class Help
+@CommandDeclaration(command = "help", description = "This command!", permission = "all") public class Help
     extends Command {
 
     @Override public boolean onCommand(CommandInstance instance) {
