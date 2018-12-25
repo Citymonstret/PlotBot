@@ -33,6 +33,7 @@ public class BotCommandManager extends CommandManager {
         this.createCommand(new Identify());
         this.createCommand(new Material());
         this.createCommand(new Translate());
+        this.createCommand(new Link());
         this.setInitialCharacter(BotConfig.initialCharacter.charAt(0));
     }
 

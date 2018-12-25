@@ -1,8 +1,10 @@
 package xyz.kvantum.plotbot;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import lombok.AccessLevel;
@@ -652,7 +654,21 @@ public class BukkitLegacyMappings {
   private static final Map<String, LegacyBlock> OLD_STRING_TO_STRING_PLOT_BLOCK = new HashMap<>();
 
   public BukkitLegacyMappings() {
-    for (final LegacyBlock legacyBlock : BLOCKS) {
+    this.addAll(Arrays.asList(BLOCKS));
+    // Make sure to add new blocks as well
+    final List<LegacyBlock> missing = new ArrayList<>();
+    for (final Material material : Material.values()) {
+      final String materialName = material.name().toLowerCase(Locale.ENGLISH);
+      if (fromStringToLegacy(materialName) == null) {
+        final LegacyBlock missingBlock = new LegacyBlock(material.getId(), materialName, materialName);
+        missing.add(missingBlock);
+      }
+    }
+    addAll(missing);
+  }
+
+  private void addAll(@NonNull final Collection<LegacyBlock> blocks) {
+    for (final LegacyBlock legacyBlock : blocks) {
       LEGACY_ID_TO_STRING_PLOT_BLOCK
           .put(legacyBlock.getNumericalId(), legacyBlock);
       if (legacyBlock.getDataValue() != 0) {

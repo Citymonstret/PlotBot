@@ -18,8 +18,7 @@ import java.io.File;
 public class PlotBot {
 
     @Getter private static PlotBot instance;
-
-    private final Logger logger;
+    @Getter private final Logger logger;
     @Getter private final JDA jda;
     @Getter private final BotCommandManager commandManager;
     private final GithubManager githubManager;
