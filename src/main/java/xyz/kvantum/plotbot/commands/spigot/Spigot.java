@@ -3,6 +3,13 @@ package xyz.kvantum.plotbot.commands.spigot;
 import com.intellectualsites.commands.Command;
 import com.intellectualsites.commands.CommandDeclaration;
 import com.intellectualsites.commands.CommandInstance;
+import java.awt.Color;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +24,14 @@ import org.json.JSONObject;
 import xyz.kvantum.plotbot.BotConfig;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-
 @CommandDeclaration(command = "spigot", description = "Get spigot stats") public class Spigot
     extends Command {
+
+    private static final Map<String, Color> SPECIAL_COLORS = new HashMap<>();
+    static {
+        SPECIAL_COLORS.put("PlotSquared", Color.ORANGE);
+        SPECIAL_COLORS.put("FastAsyncWorldEdit", Color.RED);
+    }
 
     private final OkHttpClient client = new OkHttpClient();
 
@@ -86,6 +94,9 @@ import java.util.HashSet;
                     final String jsonString = response.body().string();
                     final JSONObject object = new JSONObject(jsonString);
                     final EmbedBuilder embedBuilder = new EmbedBuilder();
+                    if (SPECIAL_COLORS.containsKey(resource.resourceName)) {
+                        embedBuilder.setColor(SPECIAL_COLORS.get(resource.resourceName));
+                    }
                     embedBuilder.setTitle("Spigot Status", resource.resourceUrl);
                     embedBuilder.addField("Resource: ", resource.resourceName, true);
                     final JSONObject rating = object.getJSONObject("rating");

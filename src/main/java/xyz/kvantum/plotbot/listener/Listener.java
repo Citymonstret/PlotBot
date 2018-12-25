@@ -2,6 +2,7 @@ package xyz.kvantum.plotbot.listener;
 
 import com.intellectualsites.commands.CommandHandlingOutput;
 import com.intellectualsites.commands.CommandResult;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,6 +12,7 @@ import lombok.var;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.priv.PrivateMessageReceivedEvent;
@@ -26,6 +28,7 @@ import xyz.kvantum.plotbot.BotConfig.AutoRank;
 import xyz.kvantum.plotbot.BotConfig.Guild;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.PlotBot;
+import xyz.kvantum.plotbot.commands.Link;
 import xyz.kvantum.plotbot.text.TextPrompt;
 import xyz.kvantum.plotbot.text.TextPromptManager;
 
@@ -54,7 +57,7 @@ public class Listener extends ListenerAdapter {
     event.getGuild().getTextChannelsByName(Guild.announcementChannel, true)
         .get(0).sendMessage(String.format("Let's party like it's %s. Welcome %s!", size,
         event.getMember().getEffectiveName())).queue();
-    sendInfoMsg(size, event.getGuild());
+    sendInfoMsg(size, event.getGuild(), null);
   }
 
   @Override
@@ -118,11 +121,11 @@ public class Listener extends ListenerAdapter {
   }
 
   private void sendInfoMsg(final int size,
-      @NonNull final net.dv8tion.jda.core.entities.Guild guild) {
+      @NonNull final net.dv8tion.jda.core.entities.Guild guild, final TextChannel channel) {
     final int nextThousand = (int) (Math.floor(size / 1000f) + 1) * 1000;
     final int left = nextThousand - size;
-    guild.getTextChannelsByName(Guild.announcementChannel, true)
-        .get(0).sendMessage(
+    TextChannel channelToSendTo = (channel == null ? guild.getTextChannelsByName(Guild.announcementChannel, true).get(0) : channel);
+    channelToSendTo.sendMessage(
         String.format("Only %d members left until we've reached %d!", left, nextThousand)).queue();
   }
 
@@ -182,6 +185,15 @@ public class Listener extends ListenerAdapter {
           if (event.getGuild() == null) {
             break;
           }
+
+          if (event.getMessage().getContentRaw().startsWith(".")) {
+            // This is a link
+            String msg = event.getMessage().getContentRaw();
+            if (msg.length() > 1 && !(msg = msg.substring(1)).isEmpty()) {
+              Link.getInstance().onCommand(commandCaller, msg.split(" "), new HashMap<>());
+            }
+            break;
+          }
           if (!event.getMessage().getMentionedMembers().isEmpty()) {
             for (final Member member : event.getMessage().getMentionedMembers()) {
               if (member.getUser().getIdLong() == PlotBot.getInstance().getJda().getSelfUser()
@@ -200,7 +212,7 @@ public class Listener extends ListenerAdapter {
                 } else if (event.getMessage().getContentRaw().contains("how many") && event
                     .getMessage().getContentRaw().contains("members")) {
                   sendInfoMsg(event.getGuild().getMembers().size(),
-                      event.getGuild());
+                      event.getGuild(), event.getMessage().getTextChannel());
                 } else if (event.getMessage().getContentRaw().contains("How do I make sense?")) {
                   commandCaller.message(
                       "Mix three parts logic and one part knowledge. Stir it until a it's a homogeneous mixture."
