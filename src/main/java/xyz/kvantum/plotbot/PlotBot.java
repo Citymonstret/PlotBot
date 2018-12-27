@@ -37,7 +37,11 @@ public class PlotBot {
 
         this.commandManager = new BotCommandManager(githubManager);
 
-        this.githubManager.connect();
+        this.logger.info("Connecting to Github...");
+
+        // this.githubManager.connect();
+
+        this.logger.info("Connecting to Discord...");
 
         // To avoid having the compiler screaming at us
         JDA temporary = null;

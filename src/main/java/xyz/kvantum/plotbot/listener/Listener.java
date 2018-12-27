@@ -13,7 +13,6 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.react.GenericMessageReactionEvent;
@@ -51,6 +50,7 @@ public class Listener extends ListenerAdapter {
         .queue(consumer -> consumer.sendMessage("You know, this is quite creepy...").queue());
   }
 
+  /*
   @Override
   public void onGuildMemberJoin(final GuildMemberJoinEvent event) {
     final int size = event.getGuild().getMembers().size();
@@ -59,6 +59,7 @@ public class Listener extends ListenerAdapter {
         event.getMember().getEffectiveName())).queue();
     sendInfoMsg(size, event.getGuild(), null);
   }
+  */
 
   @Override
   public void onMessageReactionAdd(final MessageReactionAddEvent event) {
@@ -126,7 +127,7 @@ public class Listener extends ListenerAdapter {
     final int left = nextThousand - size;
     TextChannel channelToSendTo = (channel == null ? guild.getTextChannelsByName(Guild.announcementChannel, true).get(0) : channel);
     channelToSendTo.sendMessage(
-        String.format("Only %d members left until we've reached %d!", left, nextThousand)).queue();
+        String.format("%d! Only %d members left until we've reached %d.", size, left, nextThousand)).queue();
   }
 
   @Override
@@ -190,7 +191,9 @@ public class Listener extends ListenerAdapter {
             // This is a link
             String msg = event.getMessage().getContentRaw();
             if (msg.length() > 1 && !(msg = msg.substring(1)).isEmpty()) {
-              Link.getInstance().onCommand(commandCaller, msg.split(" "), new HashMap<>());
+              String[] args = msg.split(" ");
+              args[0] = "!" + args[0];
+              Link.getInstance().onCommand(commandCaller, args, new HashMap<>());
             }
             break;
           }

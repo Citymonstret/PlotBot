@@ -110,10 +110,17 @@ public class Link extends Command {
         }
       }
     } else {
-      final String name = args[0].toLowerCase();
+      String name = args[0].toLowerCase();
+      boolean ignoreError = name.startsWith("!");
+      if (ignoreError) {
+        name = name.substring(1);
+      }
+
       if (!this.links.containsKey(name)) {
-        discordCommandCaller.message("There is no such link stored! "
-            + "Use `!link list` to get a list of all available links");
+        if (!ignoreError) {
+          discordCommandCaller.message("There is no such link stored! "
+              + "Use `!link list` to get a list of all available links");
+        }
       } else {
         // discordCommandCaller.getMessage().delete().queue();
         final LinkObject object = this.links.get(name);
@@ -121,8 +128,7 @@ public class Link extends Command {
             .addField("URL: ", object.getLink(), false)
             .addField("Description: ", object.getDesc(), false)
             .setColor(COLOR)
-            .setFooter("Requested by: " + discordCommandCaller.getMessage().getMember().getEffectiveName()
-                /*" • Today at " + LocalTime.now().format(this.dateTimeFormatter) */, discordCommandCaller.getMessage().getMember().getUser().getAvatarUrl())
+            .setFooter("Requested by: " + discordCommandCaller.getMessage().getMember().getEffectiveName(), discordCommandCaller.getMessage().getMember().getUser().getAvatarUrl())
             .setTimestamp(Instant.now())
             .build();
         discordCommandCaller.getChannel().sendMessage(embed).queue();

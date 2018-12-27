@@ -33,6 +33,9 @@ public class BotCommandManager extends CommandManager {
         this.createCommand(new Identify());
         this.createCommand(new Material());
         this.createCommand(new Translate());
+        this.createCommand(new RegionaIndicator());
+        this.createCommand(new PlotSquaredCommand());
+        this.createCommand(new PlotSquaredFlag());
         final Link link = new Link();
         this.createCommand(link);
         Link.setInstance(link);
