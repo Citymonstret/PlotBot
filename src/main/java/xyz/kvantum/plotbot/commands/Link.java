@@ -23,6 +23,7 @@ import xyz.kvantum.plotbot.DiscordCommandCaller;
 import xyz.kvantum.plotbot.LinkObject;
 import xyz.kvantum.plotbot.PlotBot;
 import xyz.kvantum.plotbot.configuration.ConfigurationSection;
+import xyz.kvantum.plotbot.configuration.MemorySection;
 import xyz.kvantum.plotbot.configuration.file.FileConfiguration;
 import xyz.kvantum.plotbot.configuration.file.YamlConfiguration;
 import xyz.kvantum.plotbot.configuration.serialization.ConfigurationSerialization;
@@ -60,7 +61,15 @@ public class Link extends Command {
       } else {
         final ConfigurationSection links = this.fileConfiguration.getConfigurationSection("links");
         final List<String> keys = new ArrayList<>(links.getKeys(false));
-        keys.forEach(key -> this.links.put(key, (LinkObject) links.get(key)));
+        keys.forEach(key -> {
+          final Object raw = links.get(key);
+          if (raw instanceof LinkObject) {
+            this.links.put(key, (LinkObject) raw);
+          } else {
+            final MemorySection section = (MemorySection) raw;
+            PlotBot.getInstance().getLogger().info(section.toString());
+          }
+        });
       }
     } catch (final Exception e) {
       PlotBot.getInstance().getLogger().error("Failed to load links", e);

@@ -1,10 +1,29 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.3'
+    }
+}
+
+
 group 'xyz.kvantum'
 version '1.0-SNAPSHOT'
 
+apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
 apply plugin: 'maven'
 
 sourceCompatibility = 1.8
+
+jar {
+    manifest {
+        attributes('Implementation-Title': 'Gradle',
+                'Implementation-Version': version,
+                'Main-Class': 'xyz.kvantum.plotbot.PlotBot')
+    }
+}
 
 repositories {
     mavenCentral()
@@ -28,7 +47,6 @@ dependencies {
     compile group: 'org.xerial', name: 'sqlite-jdbc', version: '3.23.1'
     compile group: 'org.polyjdbc', name: 'polyjdbc', version: '0.7.3'
     compile 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
-    compile(group: 'com.sk89q.worldedit', name: 'worldedit-bukkit', version: '7.0.0-SNAPSHOT')
     compile group: 'com.github.intellectualsites.plotsquared', name: 'Plotsquared', classifier: 'bukkit', version: 'latest'
     implementation 'com.github.huymluu:yandex-translate-api:cb8f63fe09'
 }
