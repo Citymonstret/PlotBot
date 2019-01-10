@@ -29,7 +29,7 @@ public class Distrust extends Command {
         discordCommandCaller.getMessage().delete().complete();
         member.getGuild().getController().removeRolesFromMember(member, roles).complete();
         discordCommandCaller.getChannel()
-            .sendMessageFormat("Aw, %s, someone doesn't trusts you!", member).queue();
+            .sendMessageFormat("Aw, %s, someone doesn't trust you!", member).queue();
       }
     }
     return true;

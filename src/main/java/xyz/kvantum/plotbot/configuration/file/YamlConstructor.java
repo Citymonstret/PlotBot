@@ -10,7 +10,7 @@ import org.yaml.snakeyaml.nodes.Tag;
 
 public class YamlConstructor extends SafeConstructor {
 
-    YamlConstructor() {
+    public YamlConstructor() {
         yamlConstructors.put(Tag.MAP, new ConstructCustomObject());
     }
 

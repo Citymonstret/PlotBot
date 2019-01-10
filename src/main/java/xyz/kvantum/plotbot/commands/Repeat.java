@@ -16,7 +16,7 @@ public class Repeat extends Command {
 
   public Repeat() {
     withArgument("num", new IntegerParser(1, 1000), "Number of times to repeat the command");
-    withArgument("interval", new IntegerParser(1, 3600), "How often it should run");
+    withArgument("interval", new IntegerParser(1, 10 * 3600), "How often it should run");
     withArgument("cmd", new StringParser(), "Command to execute (use % for spaces)");
   }
 

@@ -13,11 +13,12 @@ public final class TextPromptManager {
 
     public TextPromptManager() {
         textPrompts.add(new GoodBot());
-        textPrompts.add(new PlotMe());
+        // textPrompts.add(new PlotMe());
         textPrompts.add(new BadBot());
         textPrompts.add(new PlotSquaredSucks());
         textPrompts.add(new WhatIsLove());
         textPrompts.add(new NotMyFaultIsRude());
+        textPrompts.add(new Trusted());
     }
 
     public Optional<TextPrompt> getPrompt(final String inputText) {

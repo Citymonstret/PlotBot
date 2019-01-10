@@ -8,9 +8,9 @@ import java.util.Map;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.representer.Representer;
 
-class YamlRepresenter extends Representer {
+public class YamlRepresenter extends Representer {
 
-    YamlRepresenter() {
+    public YamlRepresenter() {
         this.multiRepresenters.put(ConfigurationSection.class, new RepresentConfigurationSection());
         this.multiRepresenters
             .put(ConfigurationSerializable.class, new RepresentConfigurationSerializable());

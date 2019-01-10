@@ -1,7 +1,12 @@
 package xyz.kvantum.plotbot.listener;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.intellectualsites.commands.CommandHandlingOutput;
 import com.intellectualsites.commands.CommandResult;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -19,15 +24,29 @@ import net.dv8tion.jda.core.events.message.react.GenericMessageReactionEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import okhttp3.ResponseBody;
 import org.slf4j.Logger;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.representer.Representer;
+import retrofit2.Call;
+import retrofit2.Response;
+import retrofit2.Retrofit;
 import xyz.kvantum.plotbot.Annoyer;
 import xyz.kvantum.plotbot.BotCommandManager;
 import xyz.kvantum.plotbot.BotConfig;
 import xyz.kvantum.plotbot.BotConfig.AutoRank;
 import xyz.kvantum.plotbot.BotConfig.Guild;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
+import xyz.kvantum.plotbot.IncendoPasteManager;
 import xyz.kvantum.plotbot.PlotBot;
 import xyz.kvantum.plotbot.commands.Link;
+import xyz.kvantum.plotbot.commands.Macro;
+import xyz.kvantum.plotbot.configuration.ConfigurationSection;
+import xyz.kvantum.plotbot.configuration.InvalidConfigurationException;
+import xyz.kvantum.plotbot.configuration.file.YamlConfiguration;
+import xyz.kvantum.plotbot.configuration.file.YamlConstructor;
+import xyz.kvantum.plotbot.configuration.file.YamlRepresenter;
 import xyz.kvantum.plotbot.text.TextPrompt;
 import xyz.kvantum.plotbot.text.TextPromptManager;
 
@@ -36,7 +55,13 @@ public class Listener extends ListenerAdapter {
 
   private static final Pattern CALL_ME_PATTERN =
       Pattern.compile("call me (?<name>[A-Za-z0-9_]+)");
+  private static final Pattern INCENDO_PASTE_LINK_PATTERN = Pattern.compile("https://incendo\\.org/paste/view/(?<paste>[A-Za-z0-9]+)");
 
+  private final Retrofit incendoRetrofit = new Retrofit.Builder().baseUrl("https://incendo.org/").build();
+  private final IncendoPasteManager incendoPasteManager = incendoRetrofit.create(IncendoPasteManager.class);
+  private final DumperOptions yamlOptions = new DumperOptions();
+  private final Representer yamlRepresenter = new YamlRepresenter();
+  private final Yaml yaml = new Yaml(new YamlConstructor(), yamlRepresenter, yamlOptions);
   private final BotCommandManager commandManager;
   private final TextPromptManager textPromptManager = new TextPromptManager();
   private final Logger logger;
@@ -187,6 +212,93 @@ public class Listener extends ListenerAdapter {
             break;
           }
 
+          final Matcher incendoPasteMatcher = INCENDO_PASTE_LINK_PATTERN.matcher(event.getMessage().getContentRaw());
+          if (incendoPasteMatcher.matches()) {
+            final String pasteId = incendoPasteMatcher.group("paste");
+            if (pasteId != null && !pasteId.isEmpty()) {
+              event.getChannel().sendMessageFormat("Analyzing paste...").queue(msg -> {
+                final Call<ResponseBody> responseBodyCall = incendoPasteManager.getPaste(pasteId, true);
+                String newMessage = "";
+                boolean hasPlotSquared4 = false;
+                boolean hasMinecraft1_1_13 = false;
+                boolean hasFawe = false;
+                try {
+                  final Response<ResponseBody> response = responseBodyCall.execute();
+                  if (!response.isSuccessful()) {
+                    newMessage = "Could not get response...";
+                  } else {
+                    final JsonObject jsonObject = new JsonParser().parse(response.body().string()).getAsJsonObject();
+                    if (jsonObject == null) {
+                      newMessage = "Failed to parse JSON";
+                    } else {
+                      String applicationId;
+                      if (!jsonObject.has("application_id") ||
+                          (!(applicationId = jsonObject.get("application_id").getAsString()).equals("plotsquared")) && !applicationId.equals("fastasyncworldedit")) {
+                        newMessage = "Unknown application ID";
+                      } else {
+                        JsonArray fileNames;
+                        if (!jsonObject.has("file_names") || (fileNames = jsonObject.get("file_names").getAsJsonArray()).size() == 0) {
+                          newMessage = "No known files";
+                        } else {
+                          if (fileNames.contains(new JsonPrimitive("information"))) {
+                            final String settingsContent = jsonObject.get("files").getAsJsonObject()
+                                .get("information").getAsString().replaceAll("([.A-Za-z0-9]+): ([().A-Za-z0-9\\-_ :/]+)\n", "$1: '$2'\n")
+                                .replace("server.version", "version.server")
+                                .replace("server.plugins", "plugins")
+                                .replaceAll(" - ([A-Za-z0-9\\-_]+): ([A-z0-9_\\- .]*)", "\n  $1:\n    version: '$2'");
+                            final YamlConfiguration configuration = new YamlConfiguration();
+                            try {
+                              configuration.loadFromString(settingsContent);
+                              final ConfigurationSection section = configuration.getConfigurationSection("plugins");
+                              final String minecraftVersion = configuration.getString("version.server", "unknown");
+                              final StringBuilder messageBuilder = new StringBuilder("Analysed Paste **>** Minecraft Version: ")
+                                  .append(minecraftVersion);
+                              hasMinecraft1_1_13 = minecraftVersion.contains("1.13.");
+                              if (section.contains("PlotSquared")) {
+                                final String version = section.getConfigurationSection("PlotSquared").getString("version").replace("'", "");
+                                messageBuilder.append(" **|** PlotSquared Version: ")
+                                    .append(version);
+                                hasPlotSquared4 = version.startsWith("4.");
+                              }
+                              if (section.contains("FastAsyncWorldEdit")) {
+                                messageBuilder.append(" **|** FAWE Version: ")
+                                    .append(section.getConfigurationSection("FastAsyncWorldEdit").getString("version").replace("'", ""));
+                                hasFawe = true;
+                              }
+                              if (section.contains("WorldEdit")) {
+                                messageBuilder.append(" **|** WorldEdit Version: ")
+                                    .append(section.getConfigurationSection("WorldEdit").getString("version").replace("'", ""));
+                              }
+                              newMessage = messageBuilder.toString();
+                            } catch (InvalidConfigurationException e) {
+                              e.printStackTrace();
+                              newMessage = String
+                                  .format("Failed to parse YAML: %s\n%s", e.getMessage(),
+                                      settingsContent);
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                } catch (final IOException e) {
+                  e.printStackTrace();
+                  newMessage = String.format("Failed to read paste: %s", e.getMessage());
+                }
+                msg.editMessageFormat(newMessage).complete();
+                if (hasMinecraft1_1_13 && !hasPlotSquared4) {
+                  event.getChannel().sendMessageFormat("You're using Minecraft 1.13 with legacy PlotSquared. Update to PlotSquared 4!")
+                      .complete();
+                }
+                if (hasPlotSquared4 && hasFawe) {
+                  event.getChannel().sendMessageFormat("You cannot use FAWE and PlotSquared 4 together, as of now. Please uninstall FAWE.")
+                      .complete();
+                }
+              });
+              break;
+            }
+          }
+
           if (event.getMessage().getContentRaw().startsWith(".")) {
             // This is a link
             String msg = event.getMessage().getContentRaw();
@@ -197,6 +309,18 @@ public class Listener extends ListenerAdapter {
             }
             break;
           }
+
+          if (event.getMessage().getContentRaw().startsWith("*")) {
+            // This is a macro
+            String msg = event.getMessage().getContentRaw();
+            if (msg.length() > 1 && !(msg = msg.substring(1)).isEmpty()) {
+              String[] args = msg.split(" ");
+              args[0] = "!" + args[0];
+              Macro.getInstance().onCommand(commandCaller, args, new HashMap<>());
+            }
+            break;
+          }
+
           if (!event.getMessage().getMentionedMembers().isEmpty()) {
             for (final Member member : event.getMessage().getMentionedMembers()) {
               if (member.getUser().getIdLong() == PlotBot.getInstance().getJda().getSelfUser()
@@ -227,7 +351,6 @@ public class Listener extends ListenerAdapter {
                     commandCaller.message(
                         "Sorry, I didn't understand that. Please make some sense.");
                   } else {
-
                   }
                 } else {
                   commandCaller.message("Don't @ me, bro! :angry:");
