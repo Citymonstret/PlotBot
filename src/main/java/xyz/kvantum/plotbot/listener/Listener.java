@@ -8,6 +8,7 @@ import com.intellectualsites.commands.CommandHandlingOutput;
 import com.intellectualsites.commands.CommandResult;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,6 +26,7 @@ import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import okhttp3.ResponseBody;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -222,6 +224,8 @@ public class Listener extends ListenerAdapter {
                 boolean hasPlotSquared4 = false;
                 boolean hasMinecraft1_1_13 = false;
                 boolean hasFawe = false;
+                boolean hasPlotSquared = false;
+                boolean hasWorldEdit = false;
                 try {
                   final Response<ResponseBody> response = responseBodyCall.execute();
                   if (!response.isSuccessful()) {
@@ -259,6 +263,7 @@ public class Listener extends ListenerAdapter {
                                 messageBuilder.append(" **|** PlotSquared Version: ")
                                     .append(version);
                                 hasPlotSquared4 = version.startsWith("4.");
+                                hasPlotSquared = true;
                               }
                               if (section.contains("FastAsyncWorldEdit")) {
                                 messageBuilder.append(" **|** FAWE Version: ")
@@ -268,6 +273,7 @@ public class Listener extends ListenerAdapter {
                               if (section.contains("WorldEdit")) {
                                 messageBuilder.append(" **|** WorldEdit Version: ")
                                     .append(section.getConfigurationSection("WorldEdit").getString("version").replace("'", ""));
+                                hasWorldEdit = true;
                               }
                               newMessage = messageBuilder.toString();
                             } catch (InvalidConfigurationException e) {
@@ -286,17 +292,30 @@ public class Listener extends ListenerAdapter {
                   newMessage = String.format("Failed to read paste: %s", e.getMessage());
                 }
                 msg.editMessageFormat(newMessage).complete();
-                if (hasMinecraft1_1_13 && !hasPlotSquared4) {
+                if (hasMinecraft1_1_13 && hasPlotSquared && !hasPlotSquared4) {
                   event.getChannel().sendMessageFormat("You're using Minecraft 1.13 with legacy PlotSquared. Update to PlotSquared 4!")
                       .complete();
                 }
-                if (hasPlotSquared4 && hasFawe) {
+                if (hasPlotSquared4 && !hasWorldEdit) {
+                  event.getChannel().sendMessageFormat("You need to have WorldEdit installed in order for PlotSquared 4 to work!")
+                      .complete();
+                }
+                if (hasPlotSquared && hasPlotSquared4 && hasFawe) {
                   event.getChannel().sendMessageFormat("You cannot use FAWE and PlotSquared 4 together, as of now. Please uninstall FAWE.")
                       .complete();
                 }
               });
               break;
             }
+          }
+
+          if (StringUtils.countMatches(event.getMessage().getContentRaw(), "[") > 10) {
+            event.getMessage().delete().complete();
+            commandCaller.message(
+                "Please post error logs using a paste service like "
+                + "https://pastebin.com\\, https://gist.github.com\\ or https://paste.md-5.net\\. "
+                + "It makes it easier to read, and does not clog up the channel.");
+            break;
           }
 
           if (event.getMessage().getContentRaw().startsWith(".")) {
@@ -318,6 +337,27 @@ public class Listener extends ListenerAdapter {
               args[0] = "!" + args[0];
               Macro.getInstance().onCommand(commandCaller, args, new HashMap<>());
             }
+            break;
+          }
+
+          final String messageRaw = event.getMessage().getContentRaw().toLowerCase(Locale.ENGLISH);
+          final String[] matches = new String[]{"ask", "have", "question", "may", "can", "where", "need help",
+              "get help", "help me", "anyone", "someone", "for help"};
+          final String[] negativeMatches = new String[]{"directly", "if", "you", "rather", "the question"};
+          int matchCount = 0;
+          for (final String match : matches) {
+            if (messageRaw.contains(match)) {
+              matchCount += 1;
+            }
+          }
+          for (final String negativeMatch : negativeMatches) {
+            if (messageRaw.contains(negativeMatch)) {
+              matchCount -= 1;
+            }
+          }
+
+          if (matchCount >= 3 && messageRaw.split(" ").length <= 10) {
+            commandCaller.message("Ask the question directly rather than asking if you can ask a question.");
             break;
           }
 
