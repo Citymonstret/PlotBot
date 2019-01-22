@@ -10,6 +10,10 @@ import com.intellectualsites.configurable.annotations.Configuration;
     public static String initialCharacter = "!";
     public static String listeningTo = "messages | !help";
 
+    @ConfigSection public static class Google {
+        public static String token = "";
+    }
+
     @ConfigSection public static class Yandex {
         public static String apiToken = "";
     }

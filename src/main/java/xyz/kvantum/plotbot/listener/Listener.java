@@ -7,6 +7,7 @@ import com.google.gson.JsonPrimitive;
 import com.intellectualsites.commands.CommandHandlingOutput;
 import com.intellectualsites.commands.CommandResult;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Optional;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
+import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
@@ -171,9 +173,24 @@ public class Listener extends ListenerAdapter {
     }
 
     PlotBot.getInstance().getHistoryManager().logMessage(event.getMessage());
-    this.logger.info("Message sent..: " + event.getMessage().getContentRaw());
+
+    this.logger.info(String.format("Message sent by '%s' in channel #%s at time %s: %s", event.getMember().getEffectiveName(), event.getChannel().getName(), event.getMessage().getCreationTime().format(
+        DateTimeFormatter.ISO_DATE_TIME), event.getMessage().getContentStripped()));
+
     final DiscordCommandCaller commandCaller =
         new DiscordCommandCaller(event.getTextChannel(), event.getMessage(), event.getMember());
+
+    // Yell for admin tagging
+    if (!event.getMember().hasPermission(Permission.ADMINISTRATOR) &&
+        event.getMessage().getMentionedMembers() != null && !event.getMessage().getMentionedMembers().isEmpty()) {
+      for (final Member member : event.getMessage().getMentionedMembers()) {
+        if (member.hasPermission(Permission.ADMINISTRATOR)) {
+          commandCaller.message("Please do **not** tag administrators.");
+          event.getMessage().delete().queue();
+          return;
+        }
+      }
+    }
 
     final String message = event.getMessage().getContentRaw();
     final String[] messages;

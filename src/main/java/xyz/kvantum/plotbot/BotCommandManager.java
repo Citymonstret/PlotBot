@@ -36,6 +36,10 @@ public class BotCommandManager extends CommandManager {
         this.createCommand(new RegionaIndicator());
         this.createCommand(new PlotSquaredCommand());
         this.createCommand(new PlotSquaredFlag());
+        this.createCommand(new Paste());
+        this.createCommand(new Google());
+        this.createCommand(new CQuery());
+
         final Macro macro = new Macro();
         this.createCommand(macro);
         Macro.setInstance(macro);
