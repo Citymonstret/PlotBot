@@ -18,13 +18,13 @@ import java.io.File;
 public class PlotBot {
 
     @Getter private static PlotBot instance;
-
-    private final Logger logger;
+    @Getter private final Logger logger;
     @Getter private final JDA jda;
     @Getter private final BotCommandManager commandManager;
     private final GithubManager githubManager;
     private final SQLiteManager sqLiteManager;
     @Getter private final HistoryManager historyManager;
+    @Getter private Listener listener;
 
     private PlotBot() {
         instance = this;
@@ -38,7 +38,11 @@ public class PlotBot {
 
         this.commandManager = new BotCommandManager(githubManager);
 
-        this.githubManager.connect();
+        this.logger.info("Connecting to Github...");
+
+        // this.githubManager.connect();
+
+        this.logger.info("Connecting to Discord...");
 
         // To avoid having the compiler screaming at us
         JDA temporary = null;
@@ -46,7 +50,7 @@ public class PlotBot {
             temporary = new JDABuilder(AccountType.BOT).setToken(BotConfig.token)
                 .setStatus(OnlineStatus.DO_NOT_DISTURB)
                 .setGame(Game.listening(BotConfig.listeningTo))
-                .addEventListener(new Listener(this.commandManager, logger)).build().awaitReady();
+                .addEventListener((this.listener = new Listener(this.commandManager, logger))).build().awaitReady();
         } catch (final LoginException | InterruptedException e) {
             this.logger.error("Failed to create JDA instance :(", e);
             System.exit(-1);

@@ -1,31 +1,56 @@
 package xyz.kvantum.plotbot.listener;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.intellectualsites.commands.CommandHandlingOutput;
 import com.intellectualsites.commands.CommandResult;
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.var;
+import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.react.GenericMessageReactionEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import okhttp3.ResponseBody;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.representer.Representer;
+import retrofit2.Call;
+import retrofit2.Response;
+import retrofit2.Retrofit;
 import xyz.kvantum.plotbot.Annoyer;
 import xyz.kvantum.plotbot.BotCommandManager;
 import xyz.kvantum.plotbot.BotConfig;
 import xyz.kvantum.plotbot.BotConfig.AutoRank;
 import xyz.kvantum.plotbot.BotConfig.Guild;
 import xyz.kvantum.plotbot.DiscordCommandCaller;
+import xyz.kvantum.plotbot.IncendoPasteManager;
 import xyz.kvantum.plotbot.PlotBot;
+import xyz.kvantum.plotbot.commands.Link;
+import xyz.kvantum.plotbot.commands.Macro;
+import xyz.kvantum.plotbot.configuration.ConfigurationSection;
+import xyz.kvantum.plotbot.configuration.InvalidConfigurationException;
+import xyz.kvantum.plotbot.configuration.file.YamlConfiguration;
+import xyz.kvantum.plotbot.configuration.file.YamlConstructor;
+import xyz.kvantum.plotbot.configuration.file.YamlRepresenter;
 import xyz.kvantum.plotbot.text.TextPrompt;
 import xyz.kvantum.plotbot.text.TextPromptManager;
 
@@ -34,7 +59,13 @@ public class Listener extends ListenerAdapter {
 
   private static final Pattern CALL_ME_PATTERN =
       Pattern.compile("call me (?<name>[A-Za-z0-9_]+)");
+  private static final Pattern INCENDO_PASTE_LINK_PATTERN = Pattern.compile("https://incendo\\.org/paste/view/(?<paste>[A-Za-z0-9]+)");
 
+  private final Retrofit incendoRetrofit = new Retrofit.Builder().baseUrl("https://incendo.org/").build();
+  private final IncendoPasteManager incendoPasteManager = incendoRetrofit.create(IncendoPasteManager.class);
+  private final DumperOptions yamlOptions = new DumperOptions();
+  private final Representer yamlRepresenter = new YamlRepresenter();
+  private final Yaml yaml = new Yaml(new YamlConstructor(), yamlRepresenter, yamlOptions);
   private final BotCommandManager commandManager;
   private final TextPromptManager textPromptManager = new TextPromptManager();
   private final Logger logger;
@@ -48,14 +79,16 @@ public class Listener extends ListenerAdapter {
         .queue(consumer -> consumer.sendMessage("You know, this is quite creepy...").queue());
   }
 
+  /*
   @Override
   public void onGuildMemberJoin(final GuildMemberJoinEvent event) {
     final int size = event.getGuild().getMembers().size();
     event.getGuild().getTextChannelsByName(Guild.announcementChannel, true)
         .get(0).sendMessage(String.format("Let's party like it's %s. Welcome %s!", size,
         event.getMember().getEffectiveName())).queue();
-    sendInfoMsg(size, event.getGuild());
+    sendInfoMsg(size, event.getGuild(), null);
   }
+  */
 
   @Override
   public void onMessageReactionAdd(final MessageReactionAddEvent event) {
@@ -118,12 +151,12 @@ public class Listener extends ListenerAdapter {
   }
 
   private void sendInfoMsg(final int size,
-      @NonNull final net.dv8tion.jda.core.entities.Guild guild) {
+      @NonNull final net.dv8tion.jda.core.entities.Guild guild, final TextChannel channel) {
     final int nextThousand = (int) (Math.floor(size / 1000f) + 1) * 1000;
     final int left = nextThousand - size;
-    guild.getTextChannelsByName(Guild.announcementChannel, true)
-        .get(0).sendMessage(
-        String.format("Only %d members left until we've reached %d!", left, nextThousand)).queue();
+    TextChannel channelToSendTo = (channel == null ? guild.getTextChannelsByName(Guild.announcementChannel, true).get(0) : channel);
+    channelToSendTo.sendMessage(
+        String.format("%d! Only %d members left until we've reached %d.", size, left, nextThousand)).queue();
   }
 
   @Override
@@ -140,9 +173,24 @@ public class Listener extends ListenerAdapter {
     }
 
     PlotBot.getInstance().getHistoryManager().logMessage(event.getMessage());
-    this.logger.info("Message sent..: " + event.getMessage().getContentRaw());
+
+    this.logger.info(String.format("Message sent by '%s' in channel #%s at time %s: %s", event.getMember().getEffectiveName(), event.getChannel().getName(), event.getMessage().getCreationTime().format(
+        DateTimeFormatter.ISO_DATE_TIME), event.getMessage().getContentStripped()));
+
     final DiscordCommandCaller commandCaller =
         new DiscordCommandCaller(event.getTextChannel(), event.getMessage(), event.getMember());
+
+    // Yell for admin tagging
+    if (!event.getMember().hasPermission(Permission.ADMINISTRATOR) &&
+        event.getMessage().getMentionedMembers() != null && !event.getMessage().getMentionedMembers().isEmpty()) {
+      for (final Member member : event.getMessage().getMentionedMembers()) {
+        if (member.hasPermission(Permission.ADMINISTRATOR)) {
+          commandCaller.message("Please do **not** tag administrators.");
+          event.getMessage().delete().queue();
+          return;
+        }
+      }
+    }
 
     final String message = event.getMessage().getContentRaw();
     final String[] messages;
@@ -182,6 +230,154 @@ public class Listener extends ListenerAdapter {
           if (event.getGuild() == null) {
             break;
           }
+
+          final Matcher incendoPasteMatcher = INCENDO_PASTE_LINK_PATTERN.matcher(event.getMessage().getContentRaw());
+          if (incendoPasteMatcher.matches()) {
+            final String pasteId = incendoPasteMatcher.group("paste");
+            if (pasteId != null && !pasteId.isEmpty()) {
+              event.getChannel().sendMessageFormat("Analyzing paste...").queue(msg -> {
+                final Call<ResponseBody> responseBodyCall = incendoPasteManager.getPaste(pasteId, true);
+                String newMessage = "";
+                boolean hasPlotSquared4 = false;
+                boolean hasMinecraft1_1_13 = false;
+                boolean hasFawe = false;
+                boolean hasPlotSquared = false;
+                boolean hasWorldEdit = false;
+                try {
+                  final Response<ResponseBody> response = responseBodyCall.execute();
+                  if (!response.isSuccessful()) {
+                    newMessage = "Could not get response...";
+                  } else {
+                    final JsonObject jsonObject = new JsonParser().parse(response.body().string()).getAsJsonObject();
+                    if (jsonObject == null) {
+                      newMessage = "Failed to parse JSON";
+                    } else {
+                      String applicationId;
+                      if (!jsonObject.has("application_id") ||
+                          (!(applicationId = jsonObject.get("application_id").getAsString()).equals("plotsquared")) && !applicationId.equals("fastasyncworldedit")) {
+                        newMessage = "Unknown application ID";
+                      } else {
+                        JsonArray fileNames;
+                        if (!jsonObject.has("file_names") || (fileNames = jsonObject.get("file_names").getAsJsonArray()).size() == 0) {
+                          newMessage = "No known files";
+                        } else {
+                          if (fileNames.contains(new JsonPrimitive("information"))) {
+                            final String settingsContent = jsonObject.get("files").getAsJsonObject()
+                                .get("information").getAsString().replaceAll("([.A-Za-z0-9]+): ([().A-Za-z0-9\\-_ :/]+)\n", "$1: '$2'\n")
+                                .replace("server.version", "version.server")
+                                .replace("server.plugins", "plugins")
+                                .replaceAll(" - ([A-Za-z0-9\\-_]+): ([A-z0-9_\\- .]*)", "\n  $1:\n    version: '$2'");
+                            final YamlConfiguration configuration = new YamlConfiguration();
+                            try {
+                              configuration.loadFromString(settingsContent);
+                              final ConfigurationSection section = configuration.getConfigurationSection("plugins");
+                              final String minecraftVersion = configuration.getString("version.server", "unknown");
+                              final StringBuilder messageBuilder = new StringBuilder("Analysed Paste **>** Minecraft Version: ")
+                                  .append(minecraftVersion);
+                              hasMinecraft1_1_13 = minecraftVersion.contains("1.13.");
+                              if (section.contains("PlotSquared")) {
+                                final String version = section.getConfigurationSection("PlotSquared").getString("version").replace("'", "");
+                                messageBuilder.append(" **|** PlotSquared Version: ")
+                                    .append(version);
+                                hasPlotSquared4 = version.startsWith("4.");
+                                hasPlotSquared = true;
+                              }
+                              if (section.contains("FastAsyncWorldEdit")) {
+                                messageBuilder.append(" **|** FAWE Version: ")
+                                    .append(section.getConfigurationSection("FastAsyncWorldEdit").getString("version").replace("'", ""));
+                                hasFawe = true;
+                              }
+                              if (section.contains("WorldEdit")) {
+                                messageBuilder.append(" **|** WorldEdit Version: ")
+                                    .append(section.getConfigurationSection("WorldEdit").getString("version").replace("'", ""));
+                                hasWorldEdit = true;
+                              }
+                              newMessage = messageBuilder.toString();
+                            } catch (InvalidConfigurationException e) {
+                              e.printStackTrace();
+                              newMessage = String
+                                  .format("Failed to parse YAML: %s\n%s", e.getMessage(),
+                                      settingsContent);
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                } catch (final IOException e) {
+                  e.printStackTrace();
+                  newMessage = String.format("Failed to read paste: %s", e.getMessage());
+                }
+                msg.editMessageFormat(newMessage).complete();
+                if (hasMinecraft1_1_13 && hasPlotSquared && !hasPlotSquared4) {
+                  event.getChannel().sendMessageFormat("You're using Minecraft 1.13 with legacy PlotSquared. Update to PlotSquared 4!")
+                      .complete();
+                }
+                if (hasPlotSquared4 && !hasWorldEdit) {
+                  event.getChannel().sendMessageFormat("You need to have WorldEdit installed in order for PlotSquared 4 to work!")
+                      .complete();
+                }
+                if (hasPlotSquared && hasPlotSquared4 && hasFawe) {
+                  event.getChannel().sendMessageFormat("You cannot use FAWE and PlotSquared 4 together, as of now. Please uninstall FAWE.")
+                      .complete();
+                }
+              });
+              break;
+            }
+          }
+
+          if (StringUtils.countMatches(event.getMessage().getContentRaw(), "[") > 10) {
+            event.getMessage().delete().complete();
+            commandCaller.message(
+                "Please post error logs using a paste service like "
+                + "https://pastebin.com\\, https://gist.github.com\\ or https://paste.md-5.net\\. "
+                + "It makes it easier to read, and does not clog up the channel.");
+            break;
+          }
+
+          if (event.getMessage().getContentRaw().startsWith(".")) {
+            // This is a link
+            String msg = event.getMessage().getContentRaw();
+            if (msg.length() > 1 && !(msg = msg.substring(1)).isEmpty()) {
+              String[] args = msg.split(" ");
+              args[0] = "!" + args[0];
+              Link.getInstance().onCommand(commandCaller, args, new HashMap<>());
+            }
+            break;
+          }
+
+          if (event.getMessage().getContentRaw().startsWith("*")) {
+            // This is a macro
+            String msg = event.getMessage().getContentRaw();
+            if (msg.length() > 1 && !(msg = msg.substring(1)).isEmpty()) {
+              String[] args = msg.split(" ");
+              args[0] = "!" + args[0];
+              Macro.getInstance().onCommand(commandCaller, args, new HashMap<>());
+            }
+            break;
+          }
+
+          final String messageRaw = event.getMessage().getContentRaw().toLowerCase(Locale.ENGLISH);
+          final String[] matches = new String[]{"ask", "have", "question", "may", "can", "where", "need help",
+              "get help", "help me", "anyone", "someone", "for help"};
+          final String[] negativeMatches = new String[]{"directly", "if", "you", "rather", "the question"};
+          int matchCount = 0;
+          for (final String match : matches) {
+            if (messageRaw.contains(match)) {
+              matchCount += 1;
+            }
+          }
+          for (final String negativeMatch : negativeMatches) {
+            if (messageRaw.contains(negativeMatch)) {
+              matchCount -= 1;
+            }
+          }
+
+          if (matchCount >= 3 && messageRaw.split(" ").length <= 10) {
+            commandCaller.message("Ask the question directly rather than asking if you can ask a question.");
+            break;
+          }
+
           if (!event.getMessage().getMentionedMembers().isEmpty()) {
             for (final Member member : event.getMessage().getMentionedMembers()) {
               if (member.getUser().getIdLong() == PlotBot.getInstance().getJda().getSelfUser()
@@ -200,7 +396,7 @@ public class Listener extends ListenerAdapter {
                 } else if (event.getMessage().getContentRaw().contains("how many") && event
                     .getMessage().getContentRaw().contains("members")) {
                   sendInfoMsg(event.getGuild().getMembers().size(),
-                      event.getGuild());
+                      event.getGuild(), event.getMessage().getTextChannel());
                 } else if (event.getMessage().getContentRaw().contains("How do I make sense?")) {
                   commandCaller.message(
                       "Mix three parts logic and one part knowledge. Stir it until a it's a homogeneous mixture."
@@ -212,7 +408,6 @@ public class Listener extends ListenerAdapter {
                     commandCaller.message(
                         "Sorry, I didn't understand that. Please make some sense.");
                   } else {
-
                   }
                 } else {
                   commandCaller.message("Don't @ me, bro! :angry:");
